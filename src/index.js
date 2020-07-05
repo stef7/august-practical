@@ -1,20 +1,19 @@
-require("./styles.scss");
+require('./styles.scss');
+console.log("Hello webpack!");
 
 (function(window, document){
 
 	const attachNavToggle = function(){
-		const burgers = [...document.getElementsByClassName("navbar-burger")];
-		burgers.forEach(burger => {
-			const target = document.getElementById(burger.getAttribute('data-target'));
-			burger.addEventListener("click", () => {
-				burger.classList.toggle("is-active");
-				target.classList.toggle("is-active");
+		const toggles = [...document.getElementsByClassName('nav-toggle')];
+		toggles.forEach(toggle => {
+			toggle.addEventListener('click', () => {
+				document.documentElement.classList.toggle('nav-open');
 			});
 		});
 	};
 
 	const onReady = function(callback) {
-		document.addEventListener("DOMContentLoaded", callback);
+		document.addEventListener('DOMContentLoaded', callback);
 	};
 
 	const attachOnReady = function() {
