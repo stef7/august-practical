@@ -32,8 +32,11 @@ jobs:
         echo Add other actions to build,
         echo test, and deploy your project.
         
-    - name: Run build
-      run: build
+    - name: npm install, build and test
+      run: |
+        npm install
+        npm run build --if-present
+        npm test
         
     - name: FTP Deploy
       uses: SamKirkland/FTP-Deploy-Action@3.1.1
