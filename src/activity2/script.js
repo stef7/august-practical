@@ -1,4 +1,3 @@
-require("./index.html");
 require("./style.scss");
 
 console.debug("a2 start", { process });

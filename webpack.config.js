@@ -4,13 +4,23 @@ const TerserJSPlugin = require("terser-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const HtmlWebpackTagsPlugin = require('html-webpack-tags-plugin');
+const HtmlWebpackSkipAssetsPlugin = require('html-webpack-skip-assets-plugin').HtmlWebpackSkipAssetsPlugin;
+
+function recursiveIssuer(m) {
+  if (m.issuer) {
+    return recursiveIssuer(m.issuer);
+  } else if (m.name) {
+    return m.name;
+  } else {
+    return false;
+  }
+}
 
 const baseConfig = {
   entry: {
     //main: "./src/index.js",
-    activity2: "./src/activity2/script.js",
-    activity3: "./src/activity3/script.js",
+    a2: "./src/activity2/script.js",
+    a3: "./src/activity3/script.js",
   },
   devtool: "inline-source-map",
   devServer: {
@@ -24,21 +34,14 @@ const baseConfig = {
     new HtmlWebpackPlugin({
       filename: "activity2/index.html",
       template: path.resolve(__dirname, "src", "activity2/index.html"),
+      skipAssets: [/a(ctivity|)3/],
     }),
     new HtmlWebpackPlugin({
       filename: "activity3/index.html",
       template: path.resolve(__dirname, "src", "activity3/index.html"),
+      skipAssets: [/a(ctivity|)2/],
     }),
-    /* *
-    new HtmlWebpackTagsPlugin({
-      files: ['activity2/index.html'],
-      tags: ['activity2/script.js']
-    }),
-    new HtmlWebpackTagsPlugin({
-      files: ['activity3/index.html'],
-      tags: ['activity3/script.js']
-    }),
-    /* */
+    new HtmlWebpackSkipAssetsPlugin()
   ],
   output: {
     filename: "js/[name].js",
@@ -48,7 +51,22 @@ const baseConfig = {
   optimization: {
     minimizer: [new TerserJSPlugin({}), new OptimizeCSSAssetsPlugin({})],
     splitChunks: {
-      chunks: 'all',
+      cacheGroups: {
+        a2styles: {
+          name: 'a2',
+          test: (m, c, entry = 'a2') =>
+            m.constructor.name === 'CssModule' && recursiveIssuer(m) === entry,
+          chunks: 'all',
+          enforce: true,
+        },
+        a3styles: {
+          name: 'a3',
+          test: (m, c, entry = 'a3') =>
+            m.constructor.name === 'CssModule' && recursiveIssuer(m) === entry,
+          chunks: 'all',
+          enforce: true,
+        },
+      },
     },
   },
   module: {
