@@ -15,15 +15,19 @@ console.debug("a3 start", { process });
 
 	// templating
 	const escHtml = (str => str ? str
-	  .replace(/&/g, '&amp;')
-	  .replace(/>/g, '&gt;')
-	  .replace(/</g, '&lt;')
-	  .replace(/"/g, '&quot;')
-	  .replace(/'/g, '&#39;')
-	  .replace(/`/g, '&#96;') : str).toString();
-	const tmplLiteral = tmpl => (
-		new Function('o', `let e=${escHtml};return \`${tmpl}\`;`)
-	);
+		.replace(/&/g, '&amp;')
+		.replace(/>/g, '&gt;')
+		.replace(/</g, '&lt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;')
+		.replace(/`/g, '&#96;') : str).toString();
+	const tmplLiteral = tmpl => {
+		const tidy = tmpl.trim()
+			.replace(/\>(\s+\n\s*|\s*\n\s+)\</g, '><')
+			.replace(/\s*\n\s*/g, ' ');
+		//console.debug(tidy);
+		return new Function('o', `const e = ${escHtml}; return \`${tidy}\`;`);
+	};
 	const getTmplAndRemove = id => {
 		const el = document.getElementById(id);
 		const tmpl = el.innerHTML;
