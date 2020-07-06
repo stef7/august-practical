@@ -32,6 +32,9 @@ jobs:
         echo Add other actions to build,
         echo test, and deploy your project.
         
+    - name: Run build
+      run: build
+        
     - name: FTP Deploy
       uses: SamKirkland/FTP-Deploy-Action@3.1.1
       with:
