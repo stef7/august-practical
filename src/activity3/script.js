@@ -11,61 +11,103 @@ console.debug("a3 start", { process });
 	const search = document.getElementById('search');
 	const results = document.getElementById('results');
 	const saved = document.getElementById('saved');
+	const play = document.getElementById('play');
 
-	// get templates
-	const resultTemplate = document.getElementById('result-item-template').innerHTML;
-	const savedTemplate = document.getElementById('saved-item-template').innerHTML;
-	const playTemplate = document.getElementById('play-template').innerHTML;
+	// templating
+	const escHtml = (str => str ? str
+	  .replace(/&/g, '&amp;')
+	  .replace(/>/g, '&gt;')
+	  .replace(/</g, '&lt;')
+	  .replace(/"/g, '&quot;')
+	  .replace(/'/g, '&#39;')
+	  .replace(/`/g, '&#96;') : str).toString();
+	const tmplLiteral = tmpl => (
+		new Function('o', `let e=${escHtml};return \`${tmpl}\`;`)
+	);
+	const getTmplAndRemove = id => {
+		const el = document.getElementById(id);
+		const tmpl = el.innerHTML;
+		el.remove();
+		return tmpl;
+	};
+	const resultTmpl = getTmplAndRemove('result-tmpl');
+	const savedTmpl = getTmplAndRemove('saved-tmpl');
+	const playTmpl = getTmplAndRemove('play-tmpl');
 
-	// utilities
+	// view utilities
 	const changeView = (view, toggle) => {
 		if (toggle && docel.getAttribute('data-view') == view) {
 			docel.removeAttribute('data-view');
 		}
 		else docel.setAttribute('data-view', view);
 	};
-	const templateLiteral = str => new Function('return `' + str + '`;');
 
-	// set up and handle YT API search fetching
+	// populate search results
+	const resultsInit = results.innerHTML;
 	const populateResults = items => {
 		let newHtml = '';
 		items.forEach(item => {
-			newHtml += (
-				new Function('item','return `' + resultTemplate + '`;')
-			)(item).trim();
+			newHtml += tmplLiteral(resultTmpl)(item).trim();
 		});
 		results.innerHTML = newHtml;
 	};
+
+	// set up YT API search request
+	
 	const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search');
 	const searchParams = searchUrl.searchParams;
 	searchParams.set('key', 'AIzaSyA3GH1GMqUhsOsx32ix2wnwYdgAgEDvE1I');
 	searchParams.set('type', 'video');
 	searchParams.set('part', 'snippet');
-	searchParams.set('maxResults', 20);
+	searchParams.set('maxResults', 6);
+
 	let lastQuery;
-	let currentResults;
+	let controller;
+
+	const fakeLoadAnim = () => {
+		docel.classList.add('search-loading');
+		setTimeout(() => docel.classList.remove('search-loading'), 100);
+	};
+
 	const fetchSearch = query => {
-		if (query == lastQuery) return;
+		if (query == lastQuery) return fakeLoadAnim();
 		lastQuery = query;
+
+		if (!query) {
+			results.innerHTML = resultsInit;
+			return fakeLoadAnim();
+		}
+
+		if (controller) controller.abort();
+		controller = new AbortController();
 
 		searchParams.set('q', query);
 
 		results.innerHTML = '';
 		docel.classList.add('search-loading');
 
-		fetch(searchUrl.href).then(r => r.json()).then(data => {
+		fetch(searchUrl.href, {
+			signal: controller.signal
+		}).then(r => r.json()).then(data => {
+			if (data.items) populateResults(data.items);
+			else if (data.error) {
+				results.innerHTML = `<li><b>Error:</b> ${data.error.message}</li>`;
+			}
+			
+			//results.focus();
 
-			populateResults(data.items);
-
+			controller = null;
 			docel.classList.remove('search-loading');
-		}).catch(rejectReason => {
-			console.error('search request failed:', rejectReason);
+		}).catch(err => {
+			console.error('search request failed:', err);
 
+			controller = null;
 			docel.classList.remove('search-loading');
 		});
 	};
 
 	// display video items
+	const playInit = play.innerHTML;
 	const display = item => {
 
 	};
@@ -74,7 +116,8 @@ console.debug("a3 start", { process });
 	};
 
 	// populate saved items after save/unsave or storage event
-	const populateSaved = saved => {
+	const savedInit = saved.innerHTML;
+	const populateSaved = items => {
 
 	};
 
@@ -108,7 +151,7 @@ console.debug("a3 start", { process });
 		clickEv.preventDefault();
 
 		changeView('saved', true);
-		saved.focus();
+		//saved.focus();
 	};
 	const attachToggle = () => {
 		toggle.addEventListener('click', onToggleClick, false);
@@ -121,7 +164,7 @@ console.debug("a3 start", { process });
 		submitEv.preventDefault();
 
 		changeView('results');
-		results.focus();
+		//results.focus();
 
 		fetchSearch(search.value);
 	};
@@ -130,12 +173,38 @@ console.debug("a3 start", { process });
 		form.addEventListener('submit', onSearchSubmit);
 	};
 
+	const test = () => {
+		window.addEventListener('click', () => {
+			saved.innerHTML = tmplLiteral(savedTmpl)({
+				id: {
+					videoId: 'M7lc1UVf-VE'
+				},
+				snippet: {
+					title: 'Title title title title title title title title title title title title',
+					channelTitle: 'channelTitle'
+				}
+			});
+			if (play.getAttribute('data-id') !== 'M7lc1UVf-VE') {
+				play.setAttribute('data-id', 'M7lc1UVf-VE');
+				play.innerHTML = tmplLiteral(playTmpl)({
+					id: 'M7lc1UVf-VE',
+					snippet: {
+						title: 'Title title title title title title title title title title title title',
+						channelTitle: 'channelTitle'
+					}
+				});
+			}
+		}, false);
+		document.querySelector('header').click();
+	};
+
 	// initialise: attach all listeners
 	const init = () => {
 		attachStorageUpdate();
 		attachSaveUnsave();
 		attachToggle();
 		attachSearch();
+		test();
 		console.debug('a3 init');
 	};
 

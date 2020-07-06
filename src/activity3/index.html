@@ -31,30 +31,52 @@
           </svg>
         </button>
       </form>
-      <a href="#saved" id="toggle" title="Saved">
-        <svg alt="Saved">
+      <a href="#saved" id="toggle" title="Saved items">
+        <svg alt="Saved items">
           <use href="#i-heart"></use>
         </svg>
       </a>
     </header>
+
     <ul id="results" tabindex="0">
-      <template id="result-item-template">
-        <li data-id="${item.id.videoId}">
-          <img />
+      <li>Search for a video above.</li>
+      <template id="result-tmpl">
+        <li data-id="${o.id.videoId}" class="saved">
+          <button type="button" class="play-video" title="Play video: ${e(o.snippet.title)}">
+            <img src="${e(o.snippet.thumbnails.medium.url)}" alt="${e(o.snippet.title)}" />
+            <div>
+              <h2>${o.snippet.title}</h2>
+              <p>${o.snippet.channelTitle}</p>
+            </div>
+          </button>
+          <button type="button" class="save-video" title="Save video: ${esc(o.snippet.title)}">
+            <svg alt="Unsave"><use href="#i-heart-outline"></use></svg>
+            <svg alt="Save"><use href="#i-heart"></use></svg>
+          </button>
         </li>
       </template>
     </ul>
+
     <ul id="saved" tabindex="0">
-      <template id="saved-item-template">
-        <li data-id="${item.id.videoId}">
+      <li>You have no saved items.</li>
+      <template id="saved-tmpl">
+        <li data-id="${e(o.id.videoId)}">
           <img />
         </li>
       </template>
     </ul>
   </nav>
-  <main>
-    <template id="play-template">
-      
+
+  <main id="play">
+    <p>Search for a video and select one to play.</p>
+    <template id="play-tmpl">
+      <div id="player">
+        <iframe type="text/html" src="https://www.youtube.com/embed/${e(o.id)}?autoplay=0&rel=0" frameborder="0"></iframe>
+      </div>
+      <div class="details">
+        <h1>${e(o.snippet.title)}</h1>
+        <p>${e(o.snippet.channelTitle)}</p>
+      </div>
     </template>
   </main>
 
