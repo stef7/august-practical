@@ -5,6 +5,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const HtmlWebpackSkipAssetsPlugin = require('html-webpack-skip-assets-plugin').HtmlWebpackSkipAssetsPlugin;
+const CopyPlugin = require('copy-webpack-plugin');
 
 function recursiveIssuer(m) {
   if (m.issuer) {
@@ -15,6 +16,8 @@ function recursiveIssuer(m) {
     return false;
   }
 }
+
+const htfiles = ['!*.htaccess', '!*.htpasswd'];
 
 const baseConfig = {
   entry: {
@@ -27,7 +30,19 @@ const baseConfig = {
     contentBase: path.join(__dirname, "dist"),
   },
   plugins: [
-    new CleanWebpackPlugin(),
+    new CopyPlugin({
+      patterns: [
+        {
+          from: 'src/.ht*',
+          to: path.join(__dirname, "dist"),
+          flatten: true,
+        },
+      ],
+    }),
+    new CleanWebpackPlugin({
+      cleanOnceBeforeBuildPatterns: ['**/*', ...htfiles],
+      cleanAfterEveryBuildPatterns: htfiles,
+    }),
     new MiniCssExtractPlugin({
       filename: "css/[name].css",
     }),
@@ -100,7 +115,7 @@ const baseConfig = {
         ],
       },
       {
-        test: /\.(png|jpg|gif|svg)$/,
+        test: /\.(png|jpg|gif|svg|htaccess)$/,
         use: [
           {
             loader: "file-loader",
