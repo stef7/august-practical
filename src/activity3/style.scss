@@ -4,15 +4,18 @@
 $break: 40rem;
 $padding-y: 1rem;
 $padding-x: 1rem;
+$padding-between: 0.5rem;
+$header-height: 3rem;
 $trans: 0.3s;
-$sidebar-size: 20rem;
+$sidebar-size: 24rem;
 
 $bg: #1d1d1d;
 $fg: #f2f2f2;
 $love: #d94770;
-$input: mix($bg, $fg, 75%);
-$input-hover: mix($bg, $fg, 50%);
-$highlight: #ff972b;
+$love-semi: rgba($love, 60%);
+$input: rgba($fg, 20%);
+$input-hover: rgba($fg, 40%);
+$highlight: $fg;
 $highlight-fg: $bg;
 
 html {
@@ -60,7 +63,7 @@ input[type="search"] {
     transition: background-color $trans ease, color $trans ease;
   }
   border: 0;
-  border-radius: 99em;
+  border-radius: $header-height / 2;
   &::placeholder {
     color: rgba($fg, 0.5);
   }
@@ -68,7 +71,7 @@ input[type="search"] {
     background: $input-hover;
   }
   &:focus {
-    outline: none;
+    //outline: none;
     background: $highlight;
     &, ~ button {
       color: $highlight-fg;
@@ -83,31 +86,37 @@ form {
   input {
     display: block;
     width: 100%;
-    height: 2rem;
-    padding: 0 2rem 0 0.75rem;
+    height: $header-height;
+    padding: 0 $header-height / 1.25 0 $header-height / 3;
   }
   button {
     color: transparent;
-    width: 2rem;
+    width: $header-height / 1.5 + 0.25rem;
+    padding-left: 0.25rem;
     position: absolute;
     right: 0;
     top: 0;
     overflow: hidden;
     height: 100%;
     cursor: pointer;
-    border-radius: 0 99em 99em 0;
+    border-radius: 0 $header-height / 2 $header-height / 2 0;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     svg {
-      width: .9rem;
-      height: .9rem;
+      width: $header-height / 3;
+      height: $header-height / 3;
     }
   }
 }
 
 body {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+nav ul,
+main {
+  overflow: auto;
 }
 body, 
 nav {
@@ -115,6 +124,7 @@ nav {
   flex-direction: column;
 }
 nav {
+  max-height: 100%;
   flex-grow: 1;
 }
 nav ul,
@@ -133,12 +143,6 @@ main {
 }
 main {
   position: relative;
-}
-#player {
-  margin: 0 -1 * $padding-x;
-  position: relative;
-  width: calc(100% + #{$padding-x * 2});
-  padding-top: calc((100% + #{$padding-x * 2}) / 16 * 9);
   iframe {
     position: absolute;
     top: 0;
@@ -156,26 +160,31 @@ li {
 
 nav header {
   display: flex;
+  padding-left: $padding-x - $padding-between;
+  > * {
+    margin-left: $padding-between;
+  }
   form {
     flex-grow: 1;
   }
-  #toggle {
+  #toggle,
+  #goback {
     flex-shrink: 0;
   }
 }
 
-#toggle {
-  padding: 0;
-  margin: 0 0 0 0.5rem;
+#toggle,
+#goback,
+.save-video {
+  cursor: pointer;
   background: $input;
   transition: background-color $trans ease;
-  border: 0;
   color: transparent;
-  width: 2rem;
-  height: 2rem;
+  width: $header-height;
+  height: $header-height;
   position: relative;
   overflow: hidden;
-  border-radius: 99em;
+  border-radius: $header-height / 2;
   color: inherit;
   &:hover {
     background: $input-hover;
@@ -183,9 +192,10 @@ nav header {
   display: flex;
   align-items: center;
   justify-content: center;
+  align-self: center;
   svg {
-    width: 1rem;
-    height: 1rem;
+    width: $header-height / 2;
+    height: $header-height / 2;
   }
 }
 
@@ -193,25 +203,39 @@ nav header {
 main {
   display: none;
 }
-
-main > p {
-  text-align: center;
+#results {
+  padding-top: 2px;
+}
+#saved {
+  padding: $padding-y $padding-x 0;
+  //border-radius: $padding-x 0 $padding-x $padding-x;
+  //margin: 0 $padding-x $padding-y $padding-x;
+  //border-radius: $padding-x;
+  background: $love-semi;
 }
 
-html[data-view="play"] {
+#goback {
+  display: none;
+}
+html.player-open {
   nav {
     flex-grow: 0;
   }
   main {
+    display: flex;
+  }
+  #goback {
     display: block;
   }
   #results,
-  #saved {
+  #saved,
+  &.saved-open #saved,
+  #toggle {
     display: none;
   }
 }
 
-html[data-view="saved"] {
+html.saved-open {
   #saved {
     display: block;
   }
@@ -219,20 +243,25 @@ html[data-view="saved"] {
     display: none;
   }
   #toggle {
-    background-color: $love;
+    background-color: $love-semi;
     color: $fg;
+    margin-bottom: -$padding-y;
+    padding-bottom: $padding-y;
+    height: $header-height + $padding-y;
+    border-radius: $header-height/2 $header-height/2 0 0;
   }
 }
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
-html.search-loading {
-  #results {
-    position: relative;
+#results {
+  position: relative;
+  html.search-loading & {
     &:before {
       content: '';
       animation: spin 1s linear infinite;
       display: block;
       position: absolute;
+      z-index: 5;
       top: 2rem;
       left: calc(50% - 2.5rem);
       width: 5rem;
@@ -242,41 +271,186 @@ html.search-loading {
       border-left-color: transparent;
       border-radius: 50%;
     }
+    > * {
+      opacity: 0.25;
+    }
   }
+}
+
+ul li {
+  display: flex;
+  .play-video {
+    flex-grow: 1;
+  }
+  .save-video {
+    flex-shrink: 0;
+  }
+  margin-bottom: $padding-y;
+}
+.play-video {
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  &:before {
+    content: '';
+    display: block;
+    padding: calc(100% / 16 * 9) 0 0;
+  }
+  img,
+  div {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+  }
+  div {
+    font-size: min(calc(3vw + 0.25rem), 1rem);
+    bottom: -0.1em;
+    padding: 0.6em 0 0.7em;
+    max-height: 60%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(1rem);
+  }
+  h2, p {
+    font-size: 1em;
+    margin: 0;
+    line-height: 1.2;
+    padding: 0 1em;
+    //overflow: hidden;
+    //text-overflow: ellipsis;
+    //white-space: nowrap;
+  }
+  img {
+    height: 100%;
+    object-fit: cover;
+  }
+}
+.save-video {
+  overflow: visible;
+  cursor: pointer;
+  margin-left: $padding-between;
+  border-radius: 50%;
+  position: relative;
+  background: transparent;
+  svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    //transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -50%);
+    transition: opacity $trans ease;
+    &[alt="Unsave"] {
+      opacity: 0;
+    }
+  }
+  &:before {
+    font-size: 0.75rem;
+    content: 'Save';
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px);
+    padding: 0.25em 0.5em;
+    border-radius: 0.5em;
+    position: absolute;
+    bottom: calc(100% + 0.5rem);
+    left: 50%;
+    transform: translate(-50%, 0);
+    opacity: 0;
+    transition: opacity $trans ease;
+    pointer-events: none;
+  }
+  &:hover {
+    background: $fg;
+    svg {
+      color: $love;
+    }
+    &:before {
+      opacity: 1;
+    }
+  }
+  &.saved {
+    &:before {
+      content: 'Unsave';
+    }
+    background: $love;
+    svg {
+      color: $fg;
+      /*
+      &[alt="Save"] {
+        transition: opacity $trans ease, transform $trans * 2 ease;
+        transform: translate(-50%, -50%) scale(3);
+      }
+      */
+    }
+  }
+  &:hover,
+  &.saved {
+    svg {
+      &[alt="Unsave"] {
+        opacity: 1;
+      }
+      &[alt="Save"] {
+        opacity: 0;
+      }
+    }
+  }
+  #saved & {
+    &.saved {
+      background: transparent;
+    }
+    &:hover {
+      background: $input-hover;
+    }
+  }
+  &:hover,
+  &:focus,
+  &:active {
+    svg {
+      &:before {
+        visibility: visible;
+      }
+    }
+  }
+}
+
+iframe {
+  background: #000;
 }
 
 @media (min-width: $break) {
   body {
     flex-direction: row;
-    height: 100vh;
-    overflow: hidden;
   }
   nav {
     flex-grow: 0;
     flex-shrink: 0;
     width: $sidebar-size;
+    max-width: 50%;
   }
   main {
-    display: block;
+    display: flex;
     flex-grow: 1;
-  }
-  nav ul,
-  main {
-    overflow: auto;
-  }
-  main {
-    .details {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      > :not(:first-child) {
-        margin-left: $padding-x;
-      }
+    align-content: center;
+    align-items: center;
+    justify-content: center;
+    > p {
+      margin: 2rem 0;
+      text-align: center;
     }
   }
-  html[data-view="play"] {
-    #results {
+  html.player-open {
+    &:not(.saved-open) #results,
+    &.saved-open #saved,
+    #toggle {
       display: block;
+    }
+    #goback {
+      display: none;
+    }
+  }
+  .play-video {
+    div {
+      font-size: min(calc(1.5vw + 0.25rem), 1rem);
     }
   }
 }

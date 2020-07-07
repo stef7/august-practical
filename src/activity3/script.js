@@ -1,5 +1,10 @@
 require("./style.scss");
 
+const testing = {
+	// error: { error: { message: 'Here is some error message' } },
+	// data: require('./testdata.json'),
+};
+
 console.debug("a3 start", { process });
 
 (function(window, document){
@@ -12,73 +17,231 @@ console.debug("a3 start", { process });
 	const results = document.getElementById('results');
 	const saved = document.getElementById('saved');
 	const play = document.getElementById('play');
+	const goback = document.getElementById('goback');
 
 	// templating
-	const escHtml = (str => str ? str
+	const esc = str => str ? str
 		.replace(/&/g, '&amp;')
 		.replace(/>/g, '&gt;')
 		.replace(/</g, '&lt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#39;')
-		.replace(/`/g, '&#96;') : str).toString();
-	const tmplLiteral = tmpl => {
-		const tidy = tmpl.trim()
-			.replace(/\>(\s+\n\s*|\s*\n\s+)\</g, '><')
-			.replace(/\s*\n\s*/g, ' ');
-		//console.debug(tidy);
-		return new Function('o', `const e = ${escHtml}; return \`${tidy}\`;`);
+		.replace(/`/g, '&#96;') : str;
+	const tmplLiteral = tmpl => new Function('o', `const e = ${esc}; return \`${tmpl}\`;`);
+	const getTemplateAndRemove = templateId => {
+		const templateElem = document.getElementById(templateId);
+		const templateString = templateElem.innerHTML;
+		templateElem.remove();
+		return templateString;
 	};
-	const getTmplAndRemove = id => {
-		const el = document.getElementById(id);
-		const tmpl = el.innerHTML;
-		el.remove();
-		return tmpl;
-	};
-	const resultTmpl = getTmplAndRemove('result-tmpl');
-	const savedTmpl = getTmplAndRemove('saved-tmpl');
-	const playTmpl = getTmplAndRemove('play-tmpl');
+	results._template = getTemplateAndRemove('result-tmpl');
+	saved._template = getTemplateAndRemove('saved-tmpl');
+	play._template = getTemplateAndRemove('play-tmpl');
 
-	// view utilities
-	const changeView = (view, toggle) => {
-		if (toggle && docel.getAttribute('data-view') == view) {
-			docel.removeAttribute('data-view');
+	// utilities:
+	// format items from yt to friendlier format
+	const formatItem = item => {
+		return {
+			id: item.id.videoId,
+			title: item.snippet.title,
+			channel: item.snippet.channelTitle,
+			img: item.snippet.thumbnails.medium.url
 		}
-		else docel.setAttribute('data-view', view);
 	};
+	// data caching util
+	const dataCache = {};
+	const cacheItems = items => items.forEach(item => dataCache[item.id] = item);
+	// current video item
+	let currentVideo;
 
-	// populate search results
-	const resultsInit = results.innerHTML;
-	const populateResults = items => {
-		let newHtml = '';
-		items.forEach(item => {
-			newHtml += tmplLiteral(resultTmpl)(item).trim();
-		});
-		results.innerHTML = newHtml;
-	};
-
-	// set up YT API search request
-	
-	const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search');
-	const searchParams = searchUrl.searchParams;
-	searchParams.set('key', 'AIzaSyA3GH1GMqUhsOsx32ix2wnwYdgAgEDvE1I');
-	searchParams.set('type', 'video');
-	searchParams.set('part', 'snippet');
-	searchParams.set('maxResults', 6);
-
-	let lastQuery;
-	let controller;
-
+	// make it more obvious the app is doing something
 	const fakeLoadAnim = () => {
 		docel.classList.add('search-loading');
 		setTimeout(() => docel.classList.remove('search-loading'), 100);
 	};
 
+	// back button (and remove hidden video on mobile)
+	play._initialHTML = play.innerHTML;
+	const onBackClick = () => {
+		docel.classList.remove('player-open');
+
+		// stop playing on back click
+		play.innerHTML = play._initialHTML;
+		currentVideo = null;
+	};
+	const attachBackClick = () => {
+		goback.addEventListener('click', onBackClick, true);
+	};
+
+	// play video items
+	const playItem = item => {
+		play.innerHTML = tmplLiteral(play._template)(item);
+	};
+	const onItemClick = clickEv => {
+		const btn = clickEv.currentTarget;
+		const item = btn._item;
+		
+		if (currentVideo !== item) {
+			currentVideo = item;
+			playItem(item);
+		}
+
+		docel.classList.add('player-open');
+	};
+	const attachItemClick = btn => {
+		btn.addEventListener('click', onItemClick, true);
+	};
+
+	// storage setup and utils
+	let savedData = {};
+	let savedIdsRgx;
+	const getSavedIdsRgx = () => {
+		const ids = savedData.items.map(i => i.id);
+		return savedIdsRgx = new RegExp('^(' + ids.join('|') + ')$');
+	};
+	const isIdSaved = id => savedIdsRgx.test(id);
+	const setSavedData = () => {
+		const newSavedStr = JSON.stringify(savedData.items);
+		if (savedData.str !== newSavedStr) {
+			savedData.str = newSavedStr;
+			localStorage.setItem('saved', newSavedStr);
+			
+			getSavedIdsRgx();
+
+			return true;
+		}
+		return false;
+	};
+	const getSavedData = () => {
+		const newSavedStr = localStorage.getItem('saved');
+		// return true if string value is diff, else don't
+		if (savedData.str !== newSavedStr) {
+			savedData.str = newSavedStr;
+			savedData.items = newSavedStr ? (JSON.parse(newSavedStr) || []) : [];
+
+			getSavedIdsRgx();
+			cacheItems(savedData.items);
+
+			return true;
+		}
+		return false;
+	};
+
+	// attach and handle storage update event
+	const loadStorage = () => {
+		getSavedData();
+		populateItems(saved, savedData.items);
+	};
+	const onStorageUpdate = () => {
+		if (getSavedData()) {
+			populateItems(saved, savedData.items);
+			updateAllSaveButtons();
+		}
+	};
+	const attachStorageUpdate = () => {
+		window.addEventListener('storage', onStorageUpdate, false);
+	};
+
+	// attach and handle save click events
+	const saveId = id => {
+		savedData.items.unshift(dataCache[id]);
+		setSavedData();
+		populateItems(saved, savedData.items);
+	};
+	const unsaveId = id => {
+		const itemIndex = savedData.items.indexOf(dataCache[id]);
+		savedData.items.splice(itemIndex, 1);
+		setSavedData();
+		populateItems(saved, savedData.items);
+	};
+	const updateSaveButton = (btn, isSaved) => {
+		if (typeof isSaved === 'boolean' ? isSaved : isIdSaved(btn._item.id)) {
+			btn.classList.add('saved');
+			btn.title = btn.title.replace(/^Save/, 'Unsave');
+		} else {
+			btn.classList.remove('saved');
+			btn.title = btn.title.replace(/^Unsave/, 'Save');
+		}
+	};
+	const updateAllSaveButtons = (id, isSaved, context = document) => {
+		let btns = [...context.getElementsByClassName('save-video')];
+		if (id) btns = btns.filter(btn => btn._item.id === id);
+		btns.forEach(btn => updateSaveButton(btn, isSaved));
+	};
+	const onSaveUnsaveClick = clickEv => {
+		const btn = clickEv.currentTarget;
+		const id = btn._item.id;
+		
+		let isSaved = isIdSaved(id);
+
+		if (isSaved) unsaveId(id);
+		else saveId(id);
+
+		updateAllSaveButtons(id, !isSaved);
+	};
+	const attachSaveClick = btn => {
+		btn.addEventListener('click', onSaveUnsaveClick, false);
+	};
+
+	// populate items (search results or saved), save initial content for when no items
+	results._initialHTML = results.innerHTML;
+	saved._initialHTML = saved.innerHTML;
+	const populateItems = (context, items) => {
+		if (!items || !items.length) {
+			context.innerHTML = context._initialHTML;
+			return;
+		}
+
+		context.innerHTML = items.map(item => tmplLiteral(context._template)(item)).join('');
+
+		[...context.children].forEach(li => {
+			const id = li.getAttribute('data-id');
+
+			const playbtn = li.getElementsByClassName('play-video')[0];
+			playbtn._item = dataCache[id];
+			attachItemClick(playbtn);
+
+			const savebtn = li.getElementsByClassName('save-video')[0];
+			savebtn._item = dataCache[id];
+			attachSaveClick(savebtn);
+			updateSaveButton(savebtn);
+		});
+	};
+
+	// set up YT API search request
+	const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search');
+	const searchParams = searchUrl.searchParams;
+	searchParams.set('key', 'AIzaSyByKVyGVMgrBeyANVC-gXcYujHPCeb1sTc');
+	searchParams.set('type', 'video');
+	searchParams.set('part', 'snippet');
+	searchParams.set('maxResults', 25);
+	let lastQuery;
+	let controller;
+	const withJson = data => {
+		if (data.items) {
+			const formattedItems = data.items.map(item => formatItem(item));
+			cacheItems(formattedItems);
+			results.scrollTop = 0;
+			populateItems(results, formattedItems);
+		}
+		else if (data.error) {
+			console.error('search request failed:', data.error);
+
+			window._useTestData = () => withJson(testing.data || require('./testdata.json'));
+			results.innerHTML = `
+				<li>Error: ${data.error.message}</li>
+				<li><a href="javascript:window._useTestData();">Use test data</a></li>
+			`;
+		}
+		controller = null;
+		docel.classList.remove('search-loading');
+	};
 	const fetchSearch = query => {
 		if (query == lastQuery) return fakeLoadAnim();
 		lastQuery = query;
 
-		if (!query) {
-			results.innerHTML = resultsInit;
+		if (!query || !query.trim()) {
+			results.innerHTML = results._initialHTML;
 			return fakeLoadAnim();
 		}
 
@@ -87,75 +250,38 @@ console.debug("a3 start", { process });
 
 		searchParams.set('q', query);
 
-		results.innerHTML = '';
 		docel.classList.add('search-loading');
-
-		fetch(searchUrl.href, {
-			signal: controller.signal
-		}).then(r => r.json()).then(data => {
-			if (data.items) populateResults(data.items);
-			else if (data.error) {
-				results.innerHTML = `<li><b>Error:</b> ${data.error.message}</li>`;
-			}
-			
-			//results.focus();
-
-			controller = null;
-			docel.classList.remove('search-loading');
-		}).catch(err => {
-			console.error('search request failed:', err);
-
-			controller = null;
-			docel.classList.remove('search-loading');
-		});
-	};
-
-	// display video items
-	const playInit = play.innerHTML;
-	const display = item => {
-
-	};
-	const onItemClick = item => {
-
-	};
-
-	// populate saved items after save/unsave or storage event
-	const savedInit = saved.innerHTML;
-	const populateSaved = items => {
-
-	};
-
-	// attach and handle storage update event
-	const onStorageUpdate = storageEv => {
-
-	};
-	const attachStorageUpdate = () => {
-		window.addEventListener('storage', ev => {
-			
-			//console.log(JSON.parse(window.localStorage.getItem('sampleList')));
-		}, false);
-	};
-
-	// attach and handle save click events
-	const save = () => {
-
-	};
-	const unsave = () => {
-
-	};
-	const onSaveUnsaveClick = clickEv => {
-
-	};
-	const attachSaveUnsave = () => {
 		
+		if (typeof testing.error === 'object') {
+			console.warn('using testError instead of API call/response:', testing.error);
+			withJson(testing.error);
+		}
+		else if (typeof testing.data === 'object') {
+			console.warn('using testData instead of API call/response:', testing.data);
+			withJson(testing.data);
+		} else {
+			fetch(searchUrl.href, {
+				signal: controller.signal
+			}).then(r => r.json()).then(withJson).catch(err => {
+				console.error('search request failed:', err);
+			
+				window._useTestData = () => withJson(testing.data || require('./testdata.json'));
+				results.innerHTML = `
+					<li>Error: ${(err && err.message) || err}</li>
+					<li><a href="javascript:window._useTestData();">Use test data</a></li>
+				`;
+	
+				controller = null;
+				docel.classList.remove('search-loading');
+			});
+		}
 	};
 
 	// attach and handle click events for saved list toggle
 	const onToggleClick = clickEv => {
 		clickEv.preventDefault();
 
-		changeView('saved', true);
-		//saved.focus();
+		docel.classList.toggle('saved-open');
 	};
 	const attachToggle = () => {
 		toggle.addEventListener('click', onToggleClick, false);
@@ -165,50 +291,27 @@ console.debug("a3 start", { process });
 	const onSearchFocus = focusEv => {
 	};
 	const onSearchSubmit = submitEv => {
-		submitEv.preventDefault();
+		if (submitEv) submitEv.preventDefault();
 
-		changeView('results');
-		//results.focus();
+		docel.classList.remove('saved-open');
+		docel.classList.remove('player-open');
 
 		fetchSearch(search.value);
+
+		return false;
 	};
 	const attachSearch = () => {
-		search.addEventListener('focus', onSearchFocus);
-		form.addEventListener('submit', onSearchSubmit);
-	};
-
-	const test = () => {
-		window.addEventListener('click', () => {
-			saved.innerHTML = tmplLiteral(savedTmpl)({
-				id: {
-					videoId: 'M7lc1UVf-VE'
-				},
-				snippet: {
-					title: 'Title title title title title title title title title title title title',
-					channelTitle: 'channelTitle'
-				}
-			});
-			if (play.getAttribute('data-id') !== 'M7lc1UVf-VE') {
-				play.setAttribute('data-id', 'M7lc1UVf-VE');
-				play.innerHTML = tmplLiteral(playTmpl)({
-					id: 'M7lc1UVf-VE',
-					snippet: {
-						title: 'Title title title title title title title title title title title title',
-						channelTitle: 'channelTitle'
-					}
-				});
-			}
-		}, false);
-		document.querySelector('header').click();
+		search.addEventListener('focus', onSearchFocus, false);
+		form.addEventListener('submit', onSearchSubmit, true);
 	};
 
 	// initialise: attach all listeners
 	const init = () => {
 		attachStorageUpdate();
-		attachSaveUnsave();
 		attachToggle();
+		attachBackClick();
 		attachSearch();
-		test();
+		loadStorage();
 		console.debug('a3 init');
 	};
 
