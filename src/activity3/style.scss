@@ -104,8 +104,18 @@ form {
     align-items: center;
     justify-content: flex-start;
     svg {
+      opacity: 0.5;
       width: $header-height / 3;
       height: $header-height / 3;
+      transition: width $trans ease, height $trans ease, opacity $trans ease;
+    }
+    &:hover,
+    &:focus {
+      svg {
+        opacity: 1;
+        width: $header-height / 2.5;
+        height: $header-height / 2.5;
+      }
     }
   }
 }
@@ -186,7 +196,8 @@ nav header {
   overflow: hidden;
   border-radius: $header-height / 2;
   color: inherit;
-  &:hover {
+  &:hover,
+  &:focus {
     background: $input-hover;
   }
   display: flex;
@@ -243,7 +254,7 @@ html.saved-open {
     display: none;
   }
   #toggle {
-    background-color: $love-semi;
+    background: $love-semi linear-gradient(to bottom, $love 50%, transparent);
     color: $fg;
     margin-bottom: -$padding-y;
     padding-bottom: $padding-y;
@@ -304,13 +315,23 @@ ul li {
     left: 0;
     width: 100%;
   }
+  img {
+    transition: transform $trans ease;
+    transform: scale(1.0);
+  }
+  &:hover,
+  &:focus {
+    img {
+      transform: scale(1.1);
+    }
+  }
   div {
     font-size: min(calc(3vw + 0.25rem), 1rem);
     bottom: -0.1em;
     padding: 0.6em 0 0.7em;
     max-height: 60%;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(1rem);
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(0.5rem);
   }
   h2, p {
     font-size: 1em;
@@ -359,7 +380,8 @@ ul li {
     transition: opacity $trans ease;
     pointer-events: none;
   }
-  &:hover {
+  &:hover,
+  &:focus {
     background: $fg;
     svg {
       color: $love;
@@ -384,6 +406,7 @@ ul li {
     }
   }
   &:hover,
+  &:focus,
   &.saved {
     svg {
       &[alt="Unsave"] {
@@ -398,7 +421,8 @@ ul li {
     &.saved {
       background: transparent;
     }
-    &:hover {
+    &:hover,
+    &:focus {
       background: $input-hover;
     }
   }

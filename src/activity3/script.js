@@ -1,8 +1,8 @@
 require("./style.scss");
 
 const testing = {
-	// error: { error: { message: 'Here is some error message' } },
-	// data: require('./testdata.json'),
+	//error: { error: { message: 'Here is some error message' } },
+	//data: require('./testdata.json'),
 };
 
 console.debug("a3 start", { process });
@@ -20,14 +20,14 @@ console.debug("a3 start", { process });
 	const goback = document.getElementById('goback');
 
 	// templating
-	const esc = str => str ? str
+	const escHtml = str => str ? str
 		.replace(/&/g, '&amp;')
 		.replace(/>/g, '&gt;')
 		.replace(/</g, '&lt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#39;')
 		.replace(/`/g, '&#96;') : str;
-	const tmplLiteral = tmpl => new Function('o', `const e = ${esc}; return \`${tmpl}\`;`);
+	const tmplLiteral = tmpl => new Function('o', `const e = ${escHtml}; return \`${tmpl}\`;`);
 	const getTemplateAndRemove = templateId => {
 		const templateElem = document.getElementById(templateId);
 		const templateString = templateElem.innerHTML;
@@ -36,6 +36,7 @@ console.debug("a3 start", { process });
 	};
 	results._template = getTemplateAndRemove('result-tmpl');
 	saved._template = getTemplateAndRemove('saved-tmpl');
+	play._srcTemplate = getTemplateAndRemove('play-src-tmpl');
 	play._template = getTemplateAndRemove('play-tmpl');
 
 	// utilities:
@@ -64,32 +65,35 @@ console.debug("a3 start", { process });
 	play._initialHTML = play.innerHTML;
 	const onBackClick = () => {
 		docel.classList.remove('player-open');
-
-		// stop playing on back click
-		play.innerHTML = play._initialHTML;
-		currentVideo = null;
 	};
 	const attachBackClick = () => {
-		goback.addEventListener('click', onBackClick, true);
+		goback.addEventListener('click', onBackClick, false);
 	};
 
 	// play video items
+	let iframe;
 	const playItem = item => {
-		play.innerHTML = tmplLiteral(play._template)(item);
+		if (iframe) {
+			iframe.src = tmplLiteral(play._srcTemplate)(item);
+		} else {
+			play.innerHTML = tmplLiteral(play._template)({
+				...item,
+				src: tmplLiteral(play._srcTemplate)(item)
+			});
+			iframe = play.children[0];
+		}
+		currentVideo = item;
 	};
 	const onItemClick = clickEv => {
 		const btn = clickEv.currentTarget;
 		const item = btn._item;
 		
-		if (currentVideo !== item) {
-			currentVideo = item;
-			playItem(item);
-		}
+		if (currentVideo !== item) playItem(item);
 
 		docel.classList.add('player-open');
 	};
 	const attachItemClick = btn => {
-		btn.addEventListener('click', onItemClick, true);
+		btn.addEventListener('click', onItemClick, false);
 	};
 
 	// storage setup and utils
@@ -288,8 +292,6 @@ console.debug("a3 start", { process });
 	};
 
 	// attach and handle search input focus + form submit events
-	const onSearchFocus = focusEv => {
-	};
 	const onSearchSubmit = submitEv => {
 		if (submitEv) submitEv.preventDefault();
 
@@ -301,7 +303,6 @@ console.debug("a3 start", { process });
 		return false;
 	};
 	const attachSearch = () => {
-		search.addEventListener('focus', onSearchFocus, false);
 		form.addEventListener('submit', onSearchSubmit, true);
 	};
 
