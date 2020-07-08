@@ -37,11 +37,16 @@ const baseConfig = {
           to: path.join(__dirname, "dist"),
           flatten: true,
         },
+        {
+          from: 'src/activity3/*.json',
+          to: path.join(__dirname, "dist/activity3"),
+          flatten: true,
+        },
       ],
     }),
     new CleanWebpackPlugin({
-      cleanOnceBeforeBuildPatterns: ['**/*', ...htfiles],
-      cleanAfterEveryBuildPatterns: htfiles,
+      cleanOnceBeforeBuildPatterns: ['**/*', '!**/*.json', ...htfiles],
+      cleanAfterEveryBuildPatterns: ['!**/*.json', ...htfiles],
     }),
     new MiniCssExtractPlugin({
       filename: "css/[name].css",

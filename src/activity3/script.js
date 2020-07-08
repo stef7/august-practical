@@ -1,3 +1,5 @@
+const path = require("path");
+
 require("./style.scss");
 
 const testing = {
@@ -231,7 +233,6 @@ console.debug("a3 start", { process });
 		else if (data.error) {
 			console.error('search request failed:', data.error);
 
-			window._useTestData = () => withJson(testing.data || require('./testdata.json'));
 			results.innerHTML = `
 				<li>Error: ${data.error.message}</li>
 				<li><a href="javascript:window._useTestData();">Use test data</a></li>
@@ -240,6 +241,30 @@ console.debug("a3 start", { process });
 		controller = null;
 		docel.classList.remove('search-loading');
 	};
+	// test data fallback
+	window._useTestData = () => {
+		if (testing.data) {
+			fakeLoadAnim();
+			return withJson(testing.data);
+		}
+		console.log({ __dirname });
+		const testJsonUrl = path.join(__dirname, '/activity3/testdata.json');
+
+		if (controller) controller.abort();
+		controller = new AbortController();
+
+		docel.classList.add('search-loading');
+
+		return fetch(testJsonUrl).then(r => r.json()).then(withJson).catch(err => {
+			console.error('testdata.json search request failed:', err);
+			results.innerHTML = `
+				<li>Error: ${(err && err.message) || err}</li>
+			`;
+			controller = null;
+			docel.classList.remove('search-loading');
+		});
+	};
+	// actual YT API call
 	const fetchSearch = query => {
 		if (query == lastQuery) return fakeLoadAnim();
 		lastQuery = query;
@@ -258,18 +283,18 @@ console.debug("a3 start", { process });
 		
 		if (typeof testing.error === 'object') {
 			console.warn('using testError instead of API call/response:', testing.error);
-			withJson(testing.error);
+			return withJson(testing.error);
 		}
 		else if (typeof testing.data === 'object') {
 			console.warn('using testData instead of API call/response:', testing.data);
-			withJson(testing.data);
-		} else {
-			fetch(searchUrl.href, {
+			return withJson(testing.data);
+		}
+		else {
+			return fetch(searchUrl.href, {
 				signal: controller.signal
 			}).then(r => r.json()).then(withJson).catch(err => {
 				console.error('search request failed:', err);
 			
-				window._useTestData = () => withJson(testing.data || require('./testdata.json'));
 				results.innerHTML = `
 					<li>Error: ${(err && err.message) || err}</li>
 					<li><a href="javascript:window._useTestData();">Use test data</a></li>
