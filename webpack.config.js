@@ -25,14 +25,14 @@ const baseConfig = {
   },
   devtool: "inline-source-map",
   devServer: {
-    contentBase: path.join(__dirname, "dist"),
+    contentBase: path.join(__dirname, "public"),
   },
   plugins: [
     new CopyPlugin({
       patterns: [
         {
           from: "src/activity3/*.json",
-          to: path.join(__dirname, "dist/activity3"),
+          to: path.join(__dirname, "public/activity3"),
           flatten: true,
         },
       ],
@@ -59,7 +59,7 @@ const baseConfig = {
   output: {
     filename: "js/[name].js",
     chunkFilename: "[name].chunk.js",
-    path: path.join(__dirname, "dist"),
+    path: path.join(__dirname, "public"),
   },
   optimization: {
     minimizer: [new TerserJSPlugin({}), new OptimizeCSSAssetsPlugin({})],
