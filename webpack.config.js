@@ -31,6 +31,11 @@ const baseConfig = {
     new CopyPlugin({
       patterns: [
         {
+          from: "src/index.html",
+          to: path.join(__dirname, "public"),
+          flatten: true,
+        },
+        {
           from: "src/activity3/*.json",
           to: path.join(__dirname, "public/activity3"),
           flatten: true,
