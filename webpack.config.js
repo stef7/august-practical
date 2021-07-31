@@ -17,8 +17,6 @@ function recursiveIssuer(m) {
   }
 }
 
-const htfiles = ['!*.htaccess', '!*.htpasswd'];
-
 const baseConfig = {
   entry: {
     //main: "./src/index.js",
@@ -33,20 +31,15 @@ const baseConfig = {
     new CopyPlugin({
       patterns: [
         {
-          from: 'src/.ht*',
-          to: path.join(__dirname, "dist"),
-          flatten: true,
-        },
-        {
-          from: 'src/activity3/*.json',
+          from: "src/activity3/*.json",
           to: path.join(__dirname, "dist/activity3"),
           flatten: true,
         },
       ],
     }),
     new CleanWebpackPlugin({
-      cleanOnceBeforeBuildPatterns: ['**/*', '!**/*.json', ...htfiles],
-      cleanAfterEveryBuildPatterns: ['!**/*.json', ...htfiles],
+      cleanOnceBeforeBuildPatterns: ["**/*", "!**/*.json"],
+      cleanAfterEveryBuildPatterns: ["!**/*.json"],
     }),
     new MiniCssExtractPlugin({
       filename: "css/[name].css",
@@ -61,11 +54,11 @@ const baseConfig = {
       template: path.resolve(__dirname, "src", "activity3/index.html"),
       skipAssets: [/a(ctivity|)2/],
     }),
-    new HtmlWebpackSkipAssetsPlugin()
+    new HtmlWebpackSkipAssetsPlugin(),
   ],
   output: {
     filename: "js/[name].js",
-    chunkFilename: '[name].chunk.js',
+    chunkFilename: "[name].chunk.js",
     path: path.join(__dirname, "dist"),
   },
   optimization: {
@@ -73,17 +66,17 @@ const baseConfig = {
     splitChunks: {
       cacheGroups: {
         a2styles: {
-          name: 'a2',
-          test: (m, c, entry = 'a2') =>
-            m.constructor.name === 'CssModule' && recursiveIssuer(m) === entry,
-          chunks: 'all',
+          name: "a2",
+          test: (m, c, entry = "a2") =>
+            m.constructor.name === "CssModule" && recursiveIssuer(m) === entry,
+          chunks: "all",
           enforce: true,
         },
         a3styles: {
-          name: 'a3',
-          test: (m, c, entry = 'a3') =>
-            m.constructor.name === 'CssModule' && recursiveIssuer(m) === entry,
-          chunks: 'all',
+          name: "a3",
+          test: (m, c, entry = "a3") =>
+            m.constructor.name === "CssModule" && recursiveIssuer(m) === entry,
+          chunks: "all",
           enforce: true,
         },
       },
