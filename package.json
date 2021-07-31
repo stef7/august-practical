@@ -1,23 +1,15 @@
 {
-  "name": "august-practical",
+  "name": "dev-test-a",
   "version": "1.0.0",
-  "description": "Practical exercise for August role",
+  "description": "Dev Test A",
   "main": "webpack.config.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack --mode production",
     "start": "webpack-dev-server --mode development --open"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/stef7/august-practical.git"
-  },
   "author": "Stefano Perfili",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/stef7/august-practical/issues"
-  },
-  "homepage": "https://github.com/stef7/august-practical#readme",
   "devDependencies": {
     "@babel/core": "^7.10.4",
     "babel-loader": "^8.1.0",
