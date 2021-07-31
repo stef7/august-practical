@@ -1,8 +1,62 @@
-<ul>
-  <li>
-    <a href="/activity2">Part 1</a>
-  </li>
-  <li>
-    <a href="/activity3">Part 2</a>
-  </li>
-</ul>
+<html>
+  <head>
+    <title>Dev Test A</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        font-size: 5vmax;
+        font-family: sans-serif;
+        background-color: tan;
+      }
+      html, body {
+        min-height: 100%;
+        display: flex;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      ul, li, a {
+        padding: 0;
+        flex-grow: 1;
+        display: flex;
+      }
+      ul {
+        margin: 1rem 1rem 0 0;
+      }
+      @media (max-width: 30rem) {
+        ul {
+          flex-direction: column;
+        }
+      }
+      a {
+        flex-grow: 1;
+        margin: 0 0 1rem 1rem;
+        padding: 1rem;
+        border-radius: 1rem;
+        align-items: center;
+        justify-content: center;
+        text-decoration: underline;
+        background: lightgoldenrodyellow;
+        color: peru;
+      }
+      a:hover,
+      a:focus {
+        background: peru;
+        color: lightgoldenrodyellow;
+      }
+    </style>
+  </head>
+  <body>
+    <ul>
+      <li>
+        <a href="/activity2">Part 1</a>
+      </li>
+      <li>
+        <a href="/activity3">Part 2</a>
+      </li>
+    </ul>
+  </body>
+</html>
